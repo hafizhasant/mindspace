@@ -121,6 +121,8 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         }
 
         h.actions.setVisibility(m.loading ? View.GONE : View.VISIBLE);
+        h.copy.setVisibility(user ? View.GONE : View.VISIBLE);
+        h.share.setVisibility(user ? View.GONE : View.VISIBLE);
         h.copy.setOnClickListener(x -> copyText(m.text));
         h.share.setOnClickListener(x -> share(m));
         h.retry.setVisibility(!user && position == items.size() - 1 ? View.VISIBLE : View.GONE);
