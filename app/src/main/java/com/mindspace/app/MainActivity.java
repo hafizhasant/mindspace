@@ -82,7 +82,17 @@ public class MainActivity extends AppCompatActivity {
         attachBar = findViewById(R.id.attach_bar);
         attachThumb = findViewById(R.id.attach_thumb);
 
-        adapter = new MessageAdapter(this, messages, this::regenerate);
+        adapter = new MessageAdapter(this, messages, new MessageAdapter.Listener() {
+            @Override
+            public void onRetry(int position) {
+                regenerate(position);
+            }
+
+            @Override
+            public void onEdit(int position) {
+                editMessage(position);
+            }
+        });
         LinearLayoutManager lm = new LinearLayoutManager(this);
         lm.setStackFromEnd(true);
         list.setLayoutManager(lm);
@@ -96,7 +106,10 @@ public class MainActivity extends AppCompatActivity {
             pendingImage = null;
             showAttach();
         });
-        sendBtn.setOnClickListener(v -> ask());
+        sendBtn.setOnClickListener(v -> {
+            if (busy) stopGeneration();
+            else ask();
+        });
         showAttach();
         refresh();
     }
@@ -112,6 +125,10 @@ public class MainActivity extends AppCompatActivity {
     private void refresh() {
         adapter.notifyDataSetChanged();
         if (!messages.isEmpty()) list.scrollToPosition(messages.size() - 1);
+    }
+
+    private void setSendMode() {
+        sendBtn.setImageResource(busy ? R.drawable.ic_stop : R.drawable.ic_send);
     }
 
     private void showAttach() {
@@ -161,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void runModel() {
         busy = true;
-        sendBtn.setEnabled(false);
+        setSendMode();
         Message pending = new Message(false, "");
         pending.loading = true;
         messages.add(pending);
@@ -181,7 +198,7 @@ public class MainActivity extends AppCompatActivity {
                 reply = (r.reply == null || r.reply.isEmpty()) ? "(no reply)" : r.reply;
                 sources.addAll(r.sources);
             } catch (Exception e) {
-                reply = "Error: " + e.getMessage();
+                reply = Api.cancelled ? "Stopped." : "Error: " + e.getMessage();
             }
             final String finalReply = reply;
             final List<String[]> finalSources = sources;
@@ -191,18 +208,40 @@ public class MainActivity extends AppCompatActivity {
                 pending.sources.clear();
                 pending.sources.addAll(finalSources);
                 busy = false;
-                sendBtn.setEnabled(true);
+                setSendMode();
                 saveCurrent();
                 refresh();
             });
         });
     }
 
+    private void stopGeneration() {
+        Api.cancel();
+    }
+
     private void regenerate(int position) {
         if (busy || position < 0 || position >= messages.size()) return;
         while (messages.size() > position) messages.remove(messages.size() - 1);
-        if (messages.isEmpty() || !messages.get(messages.size() - 1).fromUser) return;
+        if (messages.isEmpty() || !messages.get(messages.size() - 1).fromUser) {
+            saveCurrent();
+            refresh();
+            return;
+        }
         runModel();
+    }
+
+    private void editMessage(int position) {
+        if (busy || position < 0 || position >= messages.size()) return;
+        Message m = messages.get(position);
+        if (!m.fromUser) return;
+        while (messages.size() > position) messages.remove(messages.size() - 1);
+        input.setText(m.text);
+        input.setSelection(input.getText().length());
+        pendingImage = m.image;
+        showAttach();
+        saveCurrent();
+        refresh();
+        input.requestFocus();
     }
 
     private void onPicked(Uri uri) {
@@ -221,6 +260,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void clearChat() {
+        if (busy) return;
         messages.clear();
         store.delete(currentId);
         refresh();

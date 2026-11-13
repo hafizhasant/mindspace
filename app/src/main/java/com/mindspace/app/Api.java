@@ -16,12 +16,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 final class Api {
+    static volatile boolean cancelled = false;
+    private static volatile HttpURLConnection active;
+
+    static void cancel() {
+        cancelled = true;
+        HttpURLConnection c = active;
+        if (c != null) c.disconnect();
+    }
+
     static final class Result {
         String reply = "";
         final List<String[]> sources = new ArrayList<>();
     }
 
     static Result chat(String llm, String searx, String model, List<Message> history) throws Exception {
+        cancelled = false;
         boolean useTools = !searx.isEmpty();
         JSONArray messages = new JSONArray();
         messages.put(new JSONObject()
@@ -54,6 +64,10 @@ final class Api {
 
         Result out = new Result();
         for (int round = 0; round < 4; round++) {
+            if (cancelled) {
+                out.reply = "Stopped.";
+                return out;
+            }
             JSONObject body = new JSONObject()
                     .put("model", model)
                     .put("messages", messages)
@@ -126,6 +140,7 @@ final class Api {
         c.setConnectTimeout(15000);
         c.setReadTimeout(300000);
         c.setRequestProperty("Content-Type", "application/json");
+        active = c;
         try (OutputStream out = c.getOutputStream()) {
             out.write(body.toString().getBytes(StandardCharsets.UTF_8));
         }
@@ -133,12 +148,17 @@ final class Api {
     }
 
     private static String read(HttpURLConnection c) throws IOException {
-        InputStream in = c.getResponseCode() >= 400 ? c.getErrorStream() : c.getInputStream();
-        BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
-        StringBuilder sb = new StringBuilder();
-        String line;
-        while ((line = r.readLine()) != null) sb.append(line);
-        r.close();
-        return sb.toString();
+        active = c;
+        try {
+            InputStream in = c.getResponseCode() >= 400 ? c.getErrorStream() : c.getInputStream();
+            BufferedReader r = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = r.readLine()) != null) sb.append(line);
+            r.close();
+            return sb.toString();
+        } finally {
+            active = null;
+        }
     }
 }
