@@ -44,7 +44,8 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         final LinearLayout row, thinking, sources, actions;
         final MaterialCardView card;
         final ImageView photo;
-        final TextView body, copy, share, retry;
+        final TextView body;
+        final View copy, share, retry;
 
         VH(View v) {
             super(v);
