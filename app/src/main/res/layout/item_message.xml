@@ -12,7 +12,7 @@
         android:id="@+id/card"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        app:cardCornerRadius="22dp"
+        app:cardCornerRadius="20dp"
         app:cardElevation="0dp"
         app:strokeWidth="0dp">
 
@@ -22,8 +22,8 @@
             android:orientation="vertical"
             android:paddingStart="16dp"
             android:paddingEnd="16dp"
-            android:paddingTop="12dp"
-            android:paddingBottom="12dp">
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp">
 
             <ImageView
                 android:id="@+id/photo"
@@ -42,8 +42,8 @@
                 android:visibility="gone">
 
                 <ProgressBar
-                    android:layout_width="18dp"
-                    android:layout_height="18dp"
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
                     android:indeterminate="true"
                     android:indeterminateTint="#D97757"
                     style="?android:attr/progressBarStyleSmall" />
@@ -63,32 +63,45 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:orientation="vertical" />
-
-            <LinearLayout
-                android:id="@+id/sources"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:orientation="vertical" />
         </LinearLayout>
     </com.google.android.material.card.MaterialCardView>
+
+    <TextView
+        android:id="@+id/source_toggle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:background="@drawable/bg_tile"
+        android:clickable="true"
+        android:focusable="true"
+        android:fontFamily="@font/firasans"
+        android:paddingStart="12dp"
+        android:paddingEnd="12dp"
+        android:paddingTop="5dp"
+        android:paddingBottom="5dp"
+        android:textColor="#B8B8B5"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
+    <LinearLayout
+        android:id="@+id/sources"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:visibility="gone" />
 
     <LinearLayout
         android:id="@+id/actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="4dp"
-        android:background="@drawable/bg_tile"
+        android:layout_marginTop="2dp"
         android:orientation="horizontal"
-        android:paddingStart="4dp"
-        android:paddingEnd="4dp"
-        android:paddingTop="2dp"
-        android:paddingBottom="2dp"
         android:visibility="gone">
 
         <ImageButton
             android:id="@+id/act_copy"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Copy"
             android:padding="7dp"
@@ -97,8 +110,9 @@
 
         <ImageButton
             android:id="@+id/act_share"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Share"
             android:padding="7dp"
@@ -107,8 +121,9 @@
 
         <ImageButton
             android:id="@+id/act_retry"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Refresh"
             android:padding="7dp"
@@ -117,8 +132,9 @@
 
         <ImageButton
             android:id="@+id/act_edit"
-            android:layout_width="34dp"
-            android:layout_height="34dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="4dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Edit"
             android:padding="7dp"

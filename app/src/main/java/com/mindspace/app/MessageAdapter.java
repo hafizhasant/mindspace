@@ -8,6 +8,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Color;
 import android.graphics.Typeface;
 import android.net.Uri;
+import android.text.TextUtils;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
 import android.view.LayoutInflater;
@@ -25,6 +26,8 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.card.MaterialCardView;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import io.noties.markwon.Markwon;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -54,6 +57,7 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         final MaterialCardView card;
         final ImageView photo;
         final ImageButton copy, share, retry, edit;
+        final TextView sourceToggle;
 
         VH(View v) {
             super(v);
@@ -64,6 +68,7 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
             thinking = v.findViewById(R.id.thinking);
             blocks = v.findViewById(R.id.blocks);
             sources = v.findViewById(R.id.sources);
+            sourceToggle = v.findViewById(R.id.source_toggle);
             copy = v.findViewById(R.id.act_copy);
             share = v.findViewById(R.id.act_share);
             retry = v.findViewById(R.id.act_retry);
@@ -85,8 +90,12 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
     public void onBindViewHolder(VH h, int position) {
         Message m = items.get(position);
         boolean user = m.fromUser;
+        boolean blank = !m.loading && m.text.trim().isEmpty() && m.image == null;
+        h.row.setVisibility(blank ? View.GONE : View.VISIBLE);
+        if (blank) return;
+
         h.row.setGravity(user ? Gravity.END : Gravity.START);
-        h.card.setCardBackgroundColor(user ? Color.parseColor("#2E2E2C") : Color.TRANSPARENT);
+        h.card.setCardBackgroundColor(user ? Color.parseColor("#2F2F2F") : Color.TRANSPARENT);
 
         if (user && m.image != null) {
             h.photo.setImageBitmap(BitmapFactory.decodeFile(m.image));
@@ -102,23 +111,11 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         } else {
             h.thinking.setVisibility(View.GONE);
             h.blocks.setVisibility(View.VISIBLE);
-            if (user) {
-                h.blocks.addView(textBlock(m.text));
-            } else {
-                fillBlocks(h.blocks, m.text);
-            }
+            if (user) h.blocks.addView(textBlock(m.text));
+            else fillBlocks(h.blocks, m.text);
         }
 
-        h.sources.removeAllViews();
-        if (!user && !m.loading) {
-            Set<String> seen = new HashSet<>();
-            int shown = 0;
-            for (String[] s : m.sources) {
-                if (shown >= 5 || !seen.add(s[1])) continue;
-                h.sources.addView(sourceView(s));
-                shown++;
-            }
-        }
+        bindSources(h, m, user);
 
         h.actions.setVisibility(m.loading ? View.GONE : View.VISIBLE);
         h.copy.setVisibility(user ? View.GONE : View.VISIBLE);
@@ -134,6 +131,64 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
             else copyText(m.text);
             return true;
         });
+    }
+
+    private void bindSources(VH h, Message m, boolean user) {
+        h.sources.removeAllViews();
+        h.sources.setVisibility(View.GONE);
+
+        Set<String> seen = new HashSet<>();
+        List<String[]> unique = new ArrayList<>();
+        for (String[] s : m.sources) {
+            if (seen.add(s[1])) unique.add(s);
+        }
+        if (user || m.loading || unique.isEmpty()) {
+            h.sourceToggle.setVisibility(View.GONE);
+            return;
+        }
+
+        int shown = Math.min(unique.size(), 5);
+        h.sourceToggle.setVisibility(View.VISIBLE);
+        h.sourceToggle.setText("Sources · " + shown);
+        h.sourceToggle.setOnClickListener(x -> {
+            if (h.sources.getVisibility() == View.VISIBLE) {
+                h.sources.setVisibility(View.GONE);
+                return;
+            }
+            h.sources.removeAllViews();
+            for (int i = 0; i < shown; i++) h.sources.addView(sourceRow(unique.get(i)));
+            h.sources.setVisibility(View.VISIBLE);
+        });
+    }
+
+    private View sourceRow(String[] s) {
+        TextView tv = new TextView(ctx);
+        String title = s[0].isEmpty() ? host(s[1]) : s[0];
+        tv.setText(title + "\n" + host(s[1]));
+        tv.setTextColor(Color.parseColor("#B8B8B5"));
+        tv.setTextSize(13);
+        if (sans != null) tv.setTypeface(sans);
+        tv.setMaxLines(2);
+        tv.setEllipsize(TextUtils.TruncateAt.END);
+        tv.setPadding(dp(12), dp(8), dp(12), dp(8));
+        tv.setBackgroundResource(R.drawable.bg_tile);
+        tv.setClickable(true);
+        tv.setFocusable(true);
+        LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(dp(280), LinearLayout.LayoutParams.WRAP_CONTENT);
+        lp.setMargins(0, dp(6), 0, 0);
+        tv.setLayoutParams(lp);
+        tv.setOnClickListener(x -> ctx.startActivity(
+                new Intent(Intent.ACTION_VIEW, Uri.parse(s[1])).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
+        return tv;
+    }
+
+    private static String host(String url) {
+        try {
+            String h = new URL(url).getHost();
+            return h.startsWith("www.") ? h.substring(4) : h;
+        } catch (Exception e) {
+            return url;
+        }
     }
 
     private void fillBlocks(LinearLayout container, String text) {
@@ -168,11 +223,12 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         TextView tv = new TextView(ctx);
         tv.setTextColor(Color.parseColor("#ECECEC"));
         tv.setTextSize(16);
-        tv.setLineSpacing(0f, 1.15f);
+        tv.setLineSpacing(dp(2), 1.2f);
         if (sans != null) tv.setTypeface(sans);
         tv.setTextIsSelectable(true);
         tv.setMovementMethod(LinkMovementMethod.getInstance());
         tv.setMaxWidth(dp(320));
+        tv.setPadding(0, 0, 0, dp(6));
         if (plain != null) tv.setText(plain);
         return tv;
     }
@@ -182,7 +238,7 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         box.setOrientation(LinearLayout.VERTICAL);
         box.setBackgroundResource(R.drawable.bg_code);
         LinearLayout.LayoutParams boxLp = new LinearLayout.LayoutParams(dp(300), LinearLayout.LayoutParams.WRAP_CONTENT);
-        boxLp.setMargins(0, dp(6), 0, dp(6));
+        boxLp.setMargins(0, dp(6), 0, dp(8));
         box.setLayoutParams(boxLp);
 
         LinearLayout header = new LinearLayout(ctx);
@@ -260,14 +316,5 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         i.setType("text/plain");
         i.putExtra(Intent.EXTRA_TEXT, m.text);
         ctx.startActivity(Intent.createChooser(i, "Share"));
-    }
-
-    private View sourceView(String[] s) {
-        View v = LayoutInflater.from(ctx).inflate(R.layout.item_source, null, false);
-        ((TextView) v.findViewById(R.id.source_title)).setText(s[0].isEmpty() ? s[1] : s[0]);
-        ((TextView) v.findViewById(R.id.source_url)).setText(s[1]);
-        v.setOnClickListener(x -> ctx.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(s[1]))
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)));
-        return v;
     }
 }
