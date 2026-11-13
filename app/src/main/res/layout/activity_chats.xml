@@ -19,7 +19,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Back"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:src="@drawable/ic_close"
             android:tint="#ECECEC" />
 
         <TextView
@@ -38,7 +38,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="New chat"
-            android:src="@android:drawable/ic_menu_add"
+            android:src="@drawable/ic_add"
             android:tint="#ECECEC" />
     </LinearLayout>
 

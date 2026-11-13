@@ -81,38 +81,42 @@
         android:id="@+id/actions"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="6dp"
+        android:layout_marginStart="0dp"
+        android:paddingStart="9dp"
         android:layout_marginTop="2dp"
         android:orientation="horizontal"
         android:visibility="gone">
 
         <ImageButton
             android:id="@+id/act_copy"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Copy"
             android:src="@drawable/ic_act_copy"
+            android:padding="7dp"
             android:tint="#B8B8B5" />
 
         <ImageButton
             android:id="@+id/act_share"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Share"
             android:src="@drawable/ic_act_share"
+            android:padding="7dp"
             android:tint="#B8B8B5" />
 
         <ImageButton
             android:id="@+id/act_retry"
-            android:layout_width="36dp"
-            android:layout_height="36dp"
-            android:layout_marginStart="8dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginStart="10dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Retry"
             android:src="@drawable/ic_act_retry"
+            android:padding="7dp"
             android:tint="#B8B8B5" />
     </LinearLayout>
 </LinearLayout>

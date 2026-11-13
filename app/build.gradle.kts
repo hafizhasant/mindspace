@@ -2,10 +2,10 @@ plugins {
     id("com.android.application")
 }
 android {
-    namespace = "com.local.chat"
+    namespace = "com.mindspace.app"
     compileSdk = 34
     defaultConfig {
-        applicationId = "com.local.chat"
+        applicationId = "com.mindspace.app"
         minSdk = 26
         targetSdk = 34
         versionCode = 4

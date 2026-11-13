@@ -1,4 +1,4 @@
-package com.local.chat;
+package com.mindspace.app;
 
 import android.content.ClipData;
 import android.content.ClipboardManager;

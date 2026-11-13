@@ -1,4 +1,4 @@
-package com.local.chat;
+package com.mindspace.app;
 
 import org.json.JSONArray;
 import org.json.JSONObject;

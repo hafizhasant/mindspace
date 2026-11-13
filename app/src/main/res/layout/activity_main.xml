@@ -20,7 +20,7 @@
             android:ellipsize="end"
             android:fontFamily="@font/firasans"
             android:maxLines="1"
-            android:text="Local Chat"
+            android:text="Mindspace"
             android:textColor="#ECECEC"
             android:textSize="20sp"
             android:textStyle="bold" />
@@ -31,7 +31,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Chats"
-            android:src="@android:drawable/ic_menu_recent_history"
+            android:src="@drawable/ic_history"
             android:tint="#ECECEC" />
 
         <ImageButton
@@ -40,7 +40,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="New chat"
-            android:src="@android:drawable/ic_menu_add"
+            android:src="@drawable/ic_add"
             android:tint="#ECECEC" />
 
         <ImageButton
@@ -49,7 +49,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Settings"
-            android:src="@android:drawable/ic_menu_manage"
+            android:src="@drawable/ic_settings"
             android:tint="#ECECEC" />
     </LinearLayout>
 
@@ -99,7 +99,7 @@
             android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Remove image"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:src="@drawable/ic_close"
             android:tint="#ECECEC" />
     </LinearLayout>
 
@@ -119,7 +119,7 @@
             android:layout_height="48dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Add to chat"
-            android:src="@android:drawable/ic_input_add"
+            android:src="@drawable/ic_add"
             android:tint="#ECECEC" />
 
         <LinearLayout
@@ -160,7 +160,7 @@
             android:contentDescription="Send"
             android:padding="12dp"
             android:scaleType="centerInside"
-            android:src="@android:drawable/ic_menu_send"
+            android:src="@drawable/ic_send"
             android:tint="#FFFFFF" />
     </LinearLayout>
 </LinearLayout>

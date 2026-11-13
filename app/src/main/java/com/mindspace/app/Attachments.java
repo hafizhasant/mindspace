@@ -1,4 +1,4 @@
-package com.local.chat;
+package com.mindspace.app;
 
 import android.content.Context;
 import android.graphics.Bitmap;

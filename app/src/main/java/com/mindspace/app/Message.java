@@ -1,4 +1,4 @@
-package com.local.chat;
+package com.mindspace.app;
 
 import java.util.ArrayList;
 import java.util.List;

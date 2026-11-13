@@ -28,7 +28,7 @@
             android:layout_height="44dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:contentDescription="Close"
-            android:src="@android:drawable/ic_menu_close_clear_cancel"
+            android:src="@drawable/ic_close"
             android:tint="#ECECEC" />
     </LinearLayout>
 
@@ -55,7 +55,7 @@
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_gallery"
+                android:src="@drawable/ic_photo"
                 android:tint="#D97757" />
 
             <TextView
@@ -88,7 +88,7 @@
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_save"
+                android:src="@drawable/ic_file"
                 android:tint="#D97757" />
 
             <TextView
@@ -120,7 +120,7 @@
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_info_details"
+                android:src="@drawable/ic_info"
                 android:tint="#D97757" />
 
             <TextView
@@ -170,7 +170,7 @@
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_manage"
+                android:src="@drawable/ic_settings"
                 android:tint="#D97757" />
 
             <TextView
@@ -202,7 +202,7 @@
             <ImageView
                 android:layout_width="26dp"
                 android:layout_height="26dp"
-                android:src="@android:drawable/ic_menu_delete"
+                android:src="@drawable/ic_delete"
                 android:tint="#D97757" />
 
             <TextView
@@ -230,7 +230,7 @@
         <ImageView
             android:layout_width="26dp"
             android:layout_height="26dp"
-            android:src="@android:drawable/ic_menu_search"
+            android:src="@drawable/ic_search"
             android:tint="#D97757" />
 
         <LinearLayout
