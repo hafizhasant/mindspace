@@ -1,4 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <style name="Theme.LocalChat" parent="Theme.Material3.DayNight.NoActionBar" />
+    <style name="Theme.LocalChat" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">#D97757</item>
+        <item name="colorOnPrimary">#FFFFFF</item>
+        <item name="colorSecondary">#D97757</item>
+        <item name="colorPrimaryContainer">#2E2E2C</item>
+        <item name="colorOnPrimaryContainer">#ECECEC</item>
+        <item name="colorSurface">#191919</item>
+        <item name="colorOnSurface">#ECECEC</item>
+        <item name="colorSurfaceVariant">#262624</item>
+        <item name="colorOnSurfaceVariant">#B8B8B5</item>
+        <item name="colorOutline">#3A3A38</item>
+        <item name="colorOutlineVariant">#33332F</item>
+        <item name="android:windowBackground">#191919</item>
+        <item name="android:statusBarColor">#191919</item>
+        <item name="android:navigationBarColor">#191919</item>
+    </style>
 </resources>

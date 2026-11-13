@@ -4,6 +4,7 @@ import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.text.method.LinkMovementMethod;
 import android.view.Gravity;
@@ -15,7 +16,6 @@ import android.widget.TextView;
 import android.widget.Toast;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.card.MaterialCardView;
-import com.google.android.material.color.MaterialColors;
 import io.noties.markwon.Markwon;
 import java.util.HashSet;
 import java.util.List;
@@ -62,9 +62,7 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         Message m = items.get(position);
         boolean user = m.fromUser;
         h.row.setGravity(user ? Gravity.END : Gravity.START);
-        h.card.setCardBackgroundColor(MaterialColors.getColor(h.card,
-                user ? com.google.android.material.R.attr.colorPrimaryContainer
-                     : com.google.android.material.R.attr.colorSurfaceVariant, 0));
+        h.card.setCardBackgroundColor(user ? Color.parseColor("#2E2E2C") : Color.TRANSPARENT);
 
         if (m.loading) {
             h.body.setText("Thinking...");

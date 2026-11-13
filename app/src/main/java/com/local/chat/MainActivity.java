@@ -2,17 +2,16 @@ package com.local.chat;
 
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.os.Handler;
+import android.os.Looper;
 import android.view.View;
-import android.widget.RadioGroup;
+import android.widget.EditText;
+import android.widget.ImageButton;
+import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.app.AppCompatDelegate;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.appbar.MaterialToolbar;
 import com.google.android.material.button.MaterialButton;
-import com.google.android.material.color.DynamicColors;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import org.json.JSONArray;
@@ -23,33 +22,31 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class MainActivity extends AppCompatActivity {
-    private static final String DEFAULT_LLM = "http://192.168.1.4:8080/v1/chat/completions";
+    private static final String DEFAULT_HOST = "192.168.1.4";
     private static final String DEFAULT_SEARX = "http://192.168.1.4:8888/search";
+    private static final String DEFAULT_ENDPOINT = "http://192.168.1.4:8080/v1/chat/completions";
     private static final String DEFAULT_MODEL = "gemma-4-12b-it-Q4_K_M";
 
     private SharedPreferences prefs;
     private final List<Message> messages = new ArrayList<>();
     private MessageAdapter adapter;
     private RecyclerView list;
-    private TextInputEditText input;
+    private EditText input;
     private MaterialButton sendBtn;
+    private MaterialButton modelChip;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
+    private final Handler ui = new Handler(Looper.getMainLooper());
 
     @Override
     protected void onCreate(Bundle state) {
-        prefs = getSharedPreferences("settings", MODE_PRIVATE);
-        AppCompatDelegate.setDefaultNightMode(themeMode(prefs.getString("theme", "system")));
-        if ("wallpaper".equals(prefs.getString("color", "wallpaper"))) {
-            DynamicColors.applyToActivityIfAvailable(this);
-        }
         super.onCreate(state);
         setContentView(R.layout.activity_main);
+        prefs = getSharedPreferences("settings", MODE_PRIVATE);
 
-        MaterialToolbar toolbar = findViewById(R.id.toolbar);
-        setSupportActionBar(toolbar);
         list = findViewById(R.id.messages);
         input = findViewById(R.id.input);
         sendBtn = findViewById(R.id.send);
+        modelChip = findViewById(R.id.model_chip);
 
         adapter = new MessageAdapter(this, messages);
         LinearLayoutManager lm = new LinearLayoutManager(this);
@@ -57,31 +54,31 @@ public class MainActivity extends AppCompatActivity {
         list.setLayoutManager(lm);
         list.setAdapter(adapter);
 
-        sendBtn.setOnClickListener(v -> ask());
-        loadChat();
-        refresh();
-    }
-
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        int id = item.getItemId();
-        if (id == R.id.action_new) {
+        ((ImageButton) findViewById(R.id.btn_new)).setOnClickListener(v -> {
             messages.clear();
             saveChat();
             refresh();
-            return true;
-        }
-        if (id == R.id.action_settings) {
-            showSettings();
-            return true;
-        }
-        return super.onOptionsItemSelected(item);
+        });
+        ((ImageButton) findViewById(R.id.btn_settings)).setOnClickListener(v -> showSettings());
+        modelChip.setOnClickListener(v -> showModelPicker());
+        sendBtn.setOnClickListener(v -> ask());
+
+        loadChat();
+        updateChip();
+        refresh();
+    }
+
+    private String model() {
+        return prefs.getString("model", DEFAULT_MODEL);
+    }
+
+    private String endpoint() {
+        return prefs.getString("endpoint", DEFAULT_ENDPOINT);
+    }
+
+    private void updateChip() {
+        String m = model();
+        modelChip.setText(m.substring(m.lastIndexOf('/') + 1));
     }
 
     private void ask() {
@@ -96,9 +93,9 @@ public class MainActivity extends AppCompatActivity {
         messages.add(pending);
         refresh();
 
-        final String llm = prefs.getString("llm", DEFAULT_LLM);
+        final String llm = endpoint();
         final String searx = prefs.getString("searx", DEFAULT_SEARX);
-        final String model = prefs.getString("model", DEFAULT_MODEL);
+        final String model = model();
         final List<Message> history = new ArrayList<>(messages);
 
         worker.execute(() -> {
@@ -113,7 +110,7 @@ public class MainActivity extends AppCompatActivity {
             }
             final String finalReply = reply;
             final List<String[]> finalSources = sources;
-            runOnUiThread(() -> {
+            ui.post(() -> {
                 pending.loading = false;
                 pending.text = finalReply;
                 pending.sources.clear();
@@ -121,6 +118,35 @@ public class MainActivity extends AppCompatActivity {
                 sendBtn.setEnabled(true);
                 saveChat();
                 refresh();
+            });
+        });
+    }
+
+    private void showModelPicker() {
+        Toast.makeText(this, "Scanning server...", Toast.LENGTH_SHORT).show();
+        final String host = prefs.getString("host", DEFAULT_HOST);
+        worker.execute(() -> {
+            List<Models.Entry> found = Models.scan(host);
+            ui.post(() -> {
+                if (found.isEmpty()) {
+                    Toast.makeText(this, "No models found at " + host + ". Is the server running?",
+                            Toast.LENGTH_LONG).show();
+                    return;
+                }
+                String[] labels = new String[found.size()];
+                for (int i = 0; i < labels.length; i++) labels[i] = found.get(i).label();
+                new MaterialAlertDialogBuilder(this)
+                        .setTitle("Models on " + host)
+                        .setItems(labels, (d, which) -> {
+                            Models.Entry e = found.get(which);
+                            prefs.edit()
+                                    .putString("model", e.name)
+                                    .putString("endpoint", e.endpoint)
+                                    .apply();
+                            updateChip();
+                        })
+                        .setNegativeButton("Close", null)
+                        .show();
             });
         });
     }
@@ -168,56 +194,30 @@ public class MainActivity extends AppCompatActivity {
 
     private void showSettings() {
         View v = getLayoutInflater().inflate(R.layout.dialog_settings, null);
-        TextInputEditText llm = v.findViewById(R.id.llm);
-        TextInputEditText searx = v.findViewById(R.id.searx);
-        TextInputEditText model = v.findViewById(R.id.model);
-        RadioGroup themeGroup = v.findViewById(R.id.theme_group);
-        RadioGroup colorGroup = v.findViewById(R.id.color_group);
+        TextInputEditText hostField = v.findViewById(R.id.host);
+        TextInputEditText searxField = v.findViewById(R.id.searx);
+        hostField.setText(prefs.getString("host", DEFAULT_HOST));
+        searxField.setText(prefs.getString("searx", DEFAULT_SEARX));
 
-        llm.setText(prefs.getString("llm", DEFAULT_LLM));
-        searx.setText(prefs.getString("searx", DEFAULT_SEARX));
-        model.setText(prefs.getString("model", DEFAULT_MODEL));
-
-        String theme = prefs.getString("theme", "system");
-        themeGroup.check(theme.equals("light") ? R.id.theme_light
-                : theme.equals("dark") ? R.id.theme_dark : R.id.theme_system);
-        String color = prefs.getString("color", "wallpaper");
-        colorGroup.check("default".equals(color) ? R.id.color_default : R.id.color_wallpaper);
-
-        final String oldColor = color;
         new MaterialAlertDialogBuilder(this)
                 .setTitle("Settings")
                 .setView(v)
                 .setPositiveButton("Save", (d, w) -> {
-                    int themeId = themeGroup.getCheckedRadioButtonId();
-                    String newTheme = themeId == R.id.theme_light ? "light"
-                            : themeId == R.id.theme_dark ? "dark" : "system";
-                    int colorId = colorGroup.getCheckedRadioButtonId();
-                    String newColor = colorId == R.id.color_default ? "default" : "wallpaper";
+                    String oldHost = prefs.getString("host", DEFAULT_HOST);
+                    String newHost = text(hostField, DEFAULT_HOST);
+                    String newEndpoint = endpoint().replace(oldHost, newHost);
                     prefs.edit()
-                            .putString("llm", text(llm, DEFAULT_LLM))
-                            .putString("searx", text(searx, DEFAULT_SEARX))
-                            .putString("model", text(model, DEFAULT_MODEL))
-                            .putString("theme", newTheme)
-                            .putString("color", newColor)
+                            .putString("host", newHost)
+                            .putString("searx", text(searxField, DEFAULT_SEARX))
+                            .putString("endpoint", newEndpoint)
                             .apply();
-                    AppCompatDelegate.setDefaultNightMode(themeMode(newTheme));
-                    if (!newColor.equals(oldColor)) recreate();
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
     }
 
-    private static String text(TextInputEditText e, String fallback) {
+    private static String text(EditText e, String fallback) {
         String s = e.getText() == null ? "" : e.getText().toString().trim();
         return s.isEmpty() ? fallback : s;
-    }
-
-    private static int themeMode(String t) {
-        switch (t) {
-            case "light": return AppCompatDelegate.MODE_NIGHT_NO;
-            case "dark": return AppCompatDelegate.MODE_NIGHT_YES;
-            default: return AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM;
-        }
     }
 }
