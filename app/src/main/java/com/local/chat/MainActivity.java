@@ -5,19 +5,20 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ListView;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -30,6 +31,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String DEFAULT_MODEL = "gemma-4-12b-it-Q4_K_M";
 
     private SharedPreferences prefs;
+    private ChatStore store;
+    private String currentId;
     private final List<Message> messages = new ArrayList<>();
     private MessageAdapter adapter;
     private RecyclerView list;
@@ -43,6 +46,14 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(state);
         setContentView(R.layout.activity_main);
         prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        store = new ChatStore(this);
+
+        currentId = prefs.getString("current", null);
+        if (currentId == null) {
+            currentId = store.newId();
+            prefs.edit().putString("current", currentId).apply();
+        }
+        messages.addAll(store.load(currentId));
 
         list = findViewById(R.id.messages);
         input = findViewById(R.id.input);
@@ -54,12 +65,11 @@ public class MainActivity extends AppCompatActivity {
         list.setLayoutManager(lm);
         list.setAdapter(adapter);
 
-        findViewById(R.id.btn_new).setOnClickListener(v -> clearChat());
+        findViewById(R.id.btn_history).setOnClickListener(v -> showHistory());
+        findViewById(R.id.btn_new).setOnClickListener(v -> newChat());
         findViewById(R.id.btn_settings).setOnClickListener(v -> showSettings());
         findViewById(R.id.btn_tools).setOnClickListener(v -> showTools());
         sendBtn.setOnClickListener(v -> ask());
-
-        loadChat();
         refresh();
     }
 
@@ -71,9 +81,43 @@ public class MainActivity extends AppCompatActivity {
         return prefs.getString("endpoint", DEFAULT_ENDPOINT);
     }
 
+    private void saveCurrent() {
+        if (messages.isEmpty()) return;
+        boolean custom = store.isCustom(currentId);
+        String title = custom ? store.title(currentId) : autoTitle();
+        store.save(currentId, title, custom, messages);
+    }
+
+    private String autoTitle() {
+        for (Message m : messages) {
+            if (m.fromUser) {
+                String t = m.text.trim().replace('\n', ' ');
+                return t.length() > 40 ? t.substring(0, 40) + "..." : t;
+            }
+        }
+        return "New chat";
+    }
+
+    private void openChat(String id) {
+        saveCurrent();
+        currentId = id;
+        prefs.edit().putString("current", id).apply();
+        messages.clear();
+        messages.addAll(store.load(id));
+        refresh();
+    }
+
+    private void newChat() {
+        saveCurrent();
+        currentId = store.newId();
+        prefs.edit().putString("current", currentId).apply();
+        messages.clear();
+        refresh();
+    }
+
     private void clearChat() {
         messages.clear();
-        saveChat();
+        store.delete(currentId);
         refresh();
     }
 
@@ -113,7 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 pending.sources.clear();
                 pending.sources.addAll(finalSources);
                 sendBtn.setEnabled(true);
-                saveChat();
+                saveCurrent();
                 refresh();
             });
         });
@@ -173,45 +217,89 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void showHistory() {
+        saveCurrent();
+        List<ChatStore.Info> chats = store.list();
+        if (chats.isEmpty()) {
+            Toast.makeText(this, "No saved chats yet", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        List<String> labels = new ArrayList<>();
+        for (ChatStore.Info c : chats) {
+            labels.add(c.id.equals(currentId) ? c.title + "  (current)" : c.title);
+        }
+        ListView lv = new ListView(this);
+        lv.setAdapter(new ArrayAdapter<>(this, android.R.layout.simple_list_item_1, labels));
+
+        AlertDialog dialog = new MaterialAlertDialogBuilder(this)
+                .setTitle("Chats")
+                .setMessage("Tap to open. Hold to rename or delete.")
+                .setView(lv)
+                .setNegativeButton("Close", null)
+                .create();
+        lv.setOnItemClickListener((p, v, pos, id) -> {
+            dialog.dismiss();
+            openChat(chats.get(pos).id);
+        });
+        lv.setOnItemLongClickListener((p, v, pos, id) -> {
+            dialog.dismiss();
+            chatOptions(chats.get(pos));
+            return true;
+        });
+        dialog.show();
+    }
+
+    private void chatOptions(ChatStore.Info c) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle(c.title)
+                .setItems(new String[]{"Open", "Rename", "Delete"}, (d, which) -> {
+                    if (which == 0) openChat(c.id);
+                    else if (which == 1) renameChat(c);
+                    else deleteChat(c);
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void renameChat(ChatStore.Info c) {
+        EditText field = new EditText(this);
+        field.setText(c.title);
+        field.setSingleLine(true);
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Rename chat")
+                .setView(field)
+                .setPositiveButton("Save", (d, w) -> {
+                    String t = field.getText().toString().trim();
+                    if (t.isEmpty()) return;
+                    List<Message> msgs = c.id.equals(currentId) ? messages : store.load(c.id);
+                    store.save(c.id, t, true, msgs);
+                    showHistory();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    private void deleteChat(ChatStore.Info c) {
+        new MaterialAlertDialogBuilder(this)
+                .setTitle("Delete this chat?")
+                .setMessage("\"" + c.title + "\" will be removed. This can't be undone.")
+                .setPositiveButton("Delete", (d, w) -> {
+                    store.delete(c.id);
+                    if (c.id.equals(currentId)) {
+                        messages.clear();
+                        currentId = store.newId();
+                        prefs.edit().putString("current", currentId).apply();
+                        refresh();
+                    }
+                    showHistory();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
     private void refresh() {
         adapter.notifyDataSetChanged();
         if (!messages.isEmpty()) list.scrollToPosition(messages.size() - 1);
-    }
-
-    private void saveChat() {
-        try {
-            JSONArray arr = new JSONArray();
-            for (Message m : messages) {
-                if (m.loading) continue;
-                JSONArray src = new JSONArray();
-                for (String[] s : m.sources) src.put(new JSONArray().put(s[0]).put(s[1]));
-                arr.put(new JSONObject()
-                        .put("user", m.fromUser)
-                        .put("text", m.text)
-                        .put("sources", src));
-            }
-            prefs.edit().putString("chat", arr.toString()).apply();
-        } catch (Exception ignored) {
-        }
-    }
-
-    private void loadChat() {
-        try {
-            JSONArray arr = new JSONArray(prefs.getString("chat", "[]"));
-            for (int i = 0; i < arr.length(); i++) {
-                JSONObject o = arr.getJSONObject(i);
-                Message m = new Message(o.getBoolean("user"), o.getString("text"));
-                JSONArray src = o.optJSONArray("sources");
-                if (src != null) {
-                    for (int j = 0; j < src.length(); j++) {
-                        JSONArray s = src.getJSONArray(j);
-                        m.sources.add(new String[]{s.getString(0), s.getString(1)});
-                    }
-                }
-                messages.add(m);
-            }
-        } catch (Exception ignored) {
-        }
     }
 
     private void showSettings() {
@@ -228,9 +316,10 @@ public class MainActivity extends AppCompatActivity {
                     String oldHost = prefs.getString("host", DEFAULT_HOST);
                     String newHost = text(hostField, DEFAULT_HOST);
                     String newEndpoint = endpoint().replace(oldHost, newHost);
+                    String newSearx = text(searxField, DEFAULT_SEARX).replace(oldHost, newHost);
                     prefs.edit()
                             .putString("host", newHost)
-                            .putString("searx", text(searxField, DEFAULT_SEARX))
+                            .putString("searx", newSearx)
                             .putString("endpoint", newEndpoint)
                             .apply();
                 })
