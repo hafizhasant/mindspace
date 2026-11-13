@@ -39,7 +39,7 @@
         android:orientation="horizontal">
 
         <LinearLayout
-            android:id="@+id/tile_model"
+            android:id="@+id/tile_photos"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -50,7 +50,72 @@
             android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="14dp">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@android:drawable/ic_menu_gallery"
+                android:tint="#D97757" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/firasans"
+                android:gravity="center"
+                android:text="Photos"
+                android:textColor="#ECECEC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_files"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:layout_marginEnd="4dp"
+            android:background="@drawable/bg_tile"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="14dp">
+
+            <ImageView
+                android:layout_width="26dp"
+                android:layout_height="26dp"
+                android:src="@android:drawable/ic_menu_save"
+                android:tint="#D97757" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:fontFamily="@font/firasans"
+                android:gravity="center"
+                android:text="Files"
+                android:textColor="#ECECEC"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/tile_model"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginStart="4dp"
+            android:background="@drawable/bg_tile"
+            android:clickable="true"
+            android:focusable="true"
+            android:foreground="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:orientation="vertical"
+            android:padding="14dp">
 
             <ImageView
                 android:layout_width="26dp"
@@ -80,13 +145,19 @@
                 android:textColor="#B8B8B5"
                 android:textSize="11sp" />
         </LinearLayout>
+    </LinearLayout>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:orientation="horizontal">
 
         <LinearLayout
             android:id="@+id/tile_server"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="4dp"
             android:layout_marginEnd="4dp"
             android:background="@drawable/bg_tile"
             android:clickable="true"
@@ -94,7 +165,7 @@
             android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="14dp">
 
             <ImageView
                 android:layout_width="26dp"
@@ -126,7 +197,7 @@
             android:foreground="?attr/selectableItemBackground"
             android:gravity="center"
             android:orientation="vertical"
-            android:padding="16dp">
+            android:padding="14dp">
 
             <ImageView
                 android:layout_width="26dp"

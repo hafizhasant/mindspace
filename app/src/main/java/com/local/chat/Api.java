@@ -22,18 +22,34 @@ final class Api {
     }
 
     static Result chat(String llm, String searx, String model, List<Message> history) throws Exception {
+        boolean useTools = !searx.isEmpty();
         JSONArray messages = new JSONArray();
         messages.put(new JSONObject()
                 .put("role", "system")
-                .put("content", "Today is " + LocalDate.now() + ". You have a web search tool. "
-                        + "For recent events, news, results, weather or anything uncertain, call search first and include "
-                        + "the year and full event name in the query. Answer only from search results, state the year for "
-                        + "each fact, and list source URLs. If the results don't cover the question, say so."));
-        for (Message m : history) {
+                .put("content", "Today is " + LocalDate.now() + ". "
+                        + (useTools ? "You have a web search tool. Use it for recent events, news, results, "
+                        + "weather or anything uncertain. When you use search results, state the year for each "
+                        + "fact and list source URLs. " : "")
+                        + "Answer clearly and concisely."));
+
+        int lastUser = -1;
+        for (int i = 0; i < history.size(); i++) {
+            if (!history.get(i).loading && history.get(i).fromUser) lastUser = i;
+        }
+        for (int i = 0; i < history.size(); i++) {
+            Message m = history.get(i);
             if (m.loading) continue;
-            messages.put(new JSONObject()
-                    .put("role", m.fromUser ? "user" : "assistant")
-                    .put("content", m.text));
+            JSONObject o = new JSONObject().put("role", m.fromUser ? "user" : "assistant");
+            if (m.fromUser && m.image != null && i == lastUser) {
+                JSONArray parts = new JSONArray();
+                parts.put(new JSONObject().put("type", "text").put("text", m.text));
+                parts.put(new JSONObject().put("type", "image_url")
+                        .put("image_url", new JSONObject().put("url", Attachments.dataUrl(m.image))));
+                o.put("content", parts);
+            } else {
+                o.put("content", m.text);
+            }
+            messages.put(o);
         }
 
         Result out = new Result();
@@ -41,12 +57,11 @@ final class Api {
             JSONObject body = new JSONObject()
                     .put("model", model)
                     .put("messages", messages)
-                    .put("tools", tools())
                     .put("max_tokens", 1024);
-            if (searx.isEmpty()) body.remove("tools");
+            if (useTools) body.put("tools", tools());
             JSONObject msg = post(llm, body).getJSONArray("choices").getJSONObject(0).getJSONObject("message");
             JSONArray calls = msg.optJSONArray("tool_calls");
-            if (calls == null || calls.length() == 0) {
+            if (calls == null || calls.length() == 0 || !useTools) {
                 out.reply = msg.optString("content", "");
                 return out;
             }
@@ -123,6 +138,7 @@ final class Api {
         StringBuilder sb = new StringBuilder();
         String line;
         while ((line = r.readLine()) != null) sb.append(line);
+        r.close();
         return sb.toString();
     }
 }

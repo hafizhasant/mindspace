@@ -7,6 +7,7 @@ final class Message {
     final boolean fromUser;
     String text;
     boolean loading;
+    String image;
     final List<String[]> sources = new ArrayList<>();
 
     Message(boolean fromUser, String text) {
