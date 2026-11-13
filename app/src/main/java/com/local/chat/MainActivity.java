@@ -7,11 +7,13 @@ import android.os.Looper;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.Switch;
+import android.widget.TextView;
 import android.widget.Toast;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
-import com.google.android.material.button.MaterialButton;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.textfield.TextInputEditText;
 import org.json.JSONArray;
@@ -32,8 +34,7 @@ public class MainActivity extends AppCompatActivity {
     private MessageAdapter adapter;
     private RecyclerView list;
     private EditText input;
-    private MaterialButton sendBtn;
-    private MaterialButton modelChip;
+    private ImageButton sendBtn;
     private final ExecutorService worker = Executors.newSingleThreadExecutor();
     private final Handler ui = new Handler(Looper.getMainLooper());
 
@@ -46,7 +47,6 @@ public class MainActivity extends AppCompatActivity {
         list = findViewById(R.id.messages);
         input = findViewById(R.id.input);
         sendBtn = findViewById(R.id.send);
-        modelChip = findViewById(R.id.model_chip);
 
         adapter = new MessageAdapter(this, messages);
         LinearLayoutManager lm = new LinearLayoutManager(this);
@@ -54,17 +54,12 @@ public class MainActivity extends AppCompatActivity {
         list.setLayoutManager(lm);
         list.setAdapter(adapter);
 
-        ((ImageButton) findViewById(R.id.btn_new)).setOnClickListener(v -> {
-            messages.clear();
-            saveChat();
-            refresh();
-        });
-        ((ImageButton) findViewById(R.id.btn_settings)).setOnClickListener(v -> showSettings());
-        modelChip.setOnClickListener(v -> showModelPicker());
+        findViewById(R.id.btn_new).setOnClickListener(v -> clearChat());
+        findViewById(R.id.btn_settings).setOnClickListener(v -> showSettings());
+        findViewById(R.id.btn_tools).setOnClickListener(v -> showTools());
         sendBtn.setOnClickListener(v -> ask());
 
         loadChat();
-        updateChip();
         refresh();
     }
 
@@ -76,9 +71,10 @@ public class MainActivity extends AppCompatActivity {
         return prefs.getString("endpoint", DEFAULT_ENDPOINT);
     }
 
-    private void updateChip() {
-        String m = model();
-        modelChip.setText(m.substring(m.lastIndexOf('/') + 1));
+    private void clearChat() {
+        messages.clear();
+        saveChat();
+        refresh();
     }
 
     private void ask() {
@@ -94,7 +90,8 @@ public class MainActivity extends AppCompatActivity {
         refresh();
 
         final String llm = endpoint();
-        final String searx = prefs.getString("searx", DEFAULT_SEARX);
+        final boolean search = prefs.getBoolean("search", true);
+        final String searx = search ? prefs.getString("searx", DEFAULT_SEARX) : "";
         final String model = model();
         final List<Message> history = new ArrayList<>(messages);
 
@@ -122,6 +119,33 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void showTools() {
+        View v = getLayoutInflater().inflate(R.layout.sheet_tools, null);
+        BottomSheetDialog sheet = new BottomSheetDialog(this);
+        sheet.setContentView(v);
+
+        String m = model();
+        ((TextView) v.findViewById(R.id.tile_model_label)).setText(m.substring(m.lastIndexOf('/') + 1));
+        v.findViewById(R.id.close).setOnClickListener(x -> sheet.dismiss());
+        v.findViewById(R.id.tile_model).setOnClickListener(x -> {
+            sheet.dismiss();
+            showModelPicker();
+        });
+        v.findViewById(R.id.tile_server).setOnClickListener(x -> {
+            sheet.dismiss();
+            showSettings();
+        });
+        v.findViewById(R.id.tile_clear).setOnClickListener(x -> {
+            sheet.dismiss();
+            clearChat();
+        });
+
+        Switch search = v.findViewById(R.id.switch_search);
+        search.setChecked(prefs.getBoolean("search", true));
+        search.setOnCheckedChangeListener((b, on) -> prefs.edit().putBoolean("search", on).apply());
+        sheet.show();
+    }
+
     private void showModelPicker() {
         Toast.makeText(this, "Scanning server...", Toast.LENGTH_SHORT).show();
         final String host = prefs.getString("host", DEFAULT_HOST);
@@ -129,8 +153,7 @@ public class MainActivity extends AppCompatActivity {
             List<Models.Entry> found = Models.scan(host);
             ui.post(() -> {
                 if (found.isEmpty()) {
-                    Toast.makeText(this, "No models found at " + host + ". Is the server running?",
-                            Toast.LENGTH_LONG).show();
+                    Toast.makeText(this, "No models found at " + host, Toast.LENGTH_LONG).show();
                     return;
                 }
                 String[] labels = new String[found.size()];
@@ -143,7 +166,6 @@ public class MainActivity extends AppCompatActivity {
                                     .putString("model", e.name)
                                     .putString("endpoint", e.endpoint)
                                     .apply();
-                            updateChip();
                         })
                         .setNegativeButton("Close", null)
                         .show();
@@ -216,7 +238,7 @@ public class MainActivity extends AppCompatActivity {
                 .show();
     }
 
-    private static String text(EditText e, String fallback) {
+    private static String text(TextInputEditText e, String fallback) {
         String s = e.getText() == null ? "" : e.getText().toString().trim();
         return s.isEmpty() ? fallback : s;
     }

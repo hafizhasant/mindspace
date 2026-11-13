@@ -33,15 +33,15 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
     }
 
     static final class VH extends RecyclerView.ViewHolder {
-        final LinearLayout row;
+        final LinearLayout row, thinking, sources;
         final MaterialCardView card;
         final TextView body;
-        final LinearLayout sources;
 
         VH(View v) {
             super(v);
             row = v.findViewById(R.id.row);
             card = v.findViewById(R.id.card);
+            thinking = v.findViewById(R.id.thinking);
             body = v.findViewById(R.id.body);
             sources = v.findViewById(R.id.sources);
         }
@@ -65,13 +65,18 @@ final class MessageAdapter extends RecyclerView.Adapter<MessageAdapter.VH> {
         h.card.setCardBackgroundColor(user ? Color.parseColor("#2E2E2C") : Color.TRANSPARENT);
 
         if (m.loading) {
-            h.body.setText("Thinking...");
-        } else if (user) {
-            h.body.setText(m.text);
+            h.thinking.setVisibility(View.VISIBLE);
+            h.body.setVisibility(View.GONE);
         } else {
-            markwon.setMarkdown(h.body, m.text);
+            h.thinking.setVisibility(View.GONE);
+            h.body.setVisibility(View.VISIBLE);
+            if (user) {
+                h.body.setText(m.text);
+            } else {
+                markwon.setMarkdown(h.body, m.text);
+            }
+            h.body.setMovementMethod(LinkMovementMethod.getInstance());
         }
-        h.body.setMovementMethod(LinkMovementMethod.getInstance());
 
         h.sources.removeAllViews();
         if (!user && !m.loading) {

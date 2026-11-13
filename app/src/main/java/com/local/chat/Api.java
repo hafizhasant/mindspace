@@ -43,6 +43,7 @@ final class Api {
                     .put("messages", messages)
                     .put("tools", tools())
                     .put("max_tokens", 1024);
+            if (searx.isEmpty()) body.remove("tools");
             JSONObject msg = post(llm, body).getJSONArray("choices").getJSONObject(0).getJSONObject("message");
             JSONArray calls = msg.optJSONArray("tool_calls");
             if (calls == null || calls.length() == 0) {
