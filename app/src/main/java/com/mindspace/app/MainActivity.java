@@ -8,10 +8,12 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.Spinner;
 import android.widget.Switch;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -65,8 +67,28 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle state) {
         super.onCreate(state);
+        
+        // Apply saved theme from SharedPreferences BEFORE setContentView
+        SharedPreferences prefsTemp = getSharedPreferences("mindspace", MODE_PRIVATE);
+        String savedScheme = prefsTemp.getString("scheme", null);
+        if (savedScheme != null) {
+            int themeId = R.style.Theme_LocalChat;
+            switch (savedScheme) {
+                case "forest":
+                    themeId = R.style.Theme_Forest;
+                    break;
+                case "midnight":
+                    themeId = R.style.Theme_Midnight;
+                    break;
+                case "nordic":
+                    themeId = R.style.Theme_Nordic;
+                    break;
+            }
+            setTheme(themeId);
+        }
+        
         setContentView(R.layout.activity_main);
-        prefs = getSharedPreferences("settings", MODE_PRIVATE);
+        prefs = getSharedPreferences("mindspace", MODE_PRIVATE);
         store = new ChatStore(this);
 
         currentId = prefs.getString("current", null);
@@ -356,6 +378,16 @@ public class MainActivity extends AppCompatActivity {
         View v = getLayoutInflater().inflate(R.layout.dialog_settings, null);
         TextInputEditText hostField = v.findViewById(R.id.host);
         TextInputEditText searxField = v.findViewById(R.id.searx);
+        Spinner schemeSpinner = v.findViewById(R.id.scheme);
+
+        String currentScheme = ThemeUtils.loadScheme(this);
+        String[] schemes = {"LocalChat", "Forest", "Midnight", "Nordic"};
+        ArrayAdapter<String> adapter = new ArrayAdapter<>(this,
+                android.R.layout.simple_spinner_item, schemes);
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        schemeSpinner.setAdapter(adapter);
+        schemeSpinner.setSelection(getSchemeIndex(currentScheme != null ? currentScheme : "localchat"));
+
         hostField.setText(prefs.getString("host", DEFAULT_HOST));
         searxField.setText(prefs.getString("searx", DEFAULT_SEARX));
 
@@ -367,13 +399,43 @@ public class MainActivity extends AppCompatActivity {
                     String newHost = text(hostField, DEFAULT_HOST);
                     String newEndpoint = endpoint().replace(oldHost, newHost);
                     String newSearx = text(searxField, DEFAULT_SEARX).replace(oldHost, newHost);
+                    String selectedScheme = schemes[schemeSpinner.getSelectedItemPosition()];
+                    String newScheme = selectedScheme.equals("LocalChat") ? "localchat" : selectedScheme.equals("Forest") ? "forest" : selectedScheme.equals("Midnight") ? "midnight" : "nordic";
+
                     prefs.edit()
                             .putString("host", newHost)
                             .putString("searx", newSearx)
                             .putString("endpoint", newEndpoint)
                             .apply();
+
+                    ThemeUtils.saveScheme(this, newScheme);
+                    ThemeUtils.setTheme(this, 0, 0, 0);
                 })
                 .setNegativeButton("Cancel", null)
                 .show();
+    }
+
+    private int getSchemeIndex(String scheme) {
+        if (scheme == null) return 0;
+        switch (scheme.toLowerCase()) {
+            case "forest": return 1;
+            case "midnight": return 2;
+            case "nordic": return 3;
+            default: return 0;
+        }
+    }
+
+    private void setThemeColor(Context c, int color, int attr) {
+        try {
+            c.getClass().getMethod("setThemeColor", int.class, int.class).invoke(c, color, attr);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void setThemeColor(int color, int attr) {
+        Context c = this;
+        while (c.getApplicationContext() != c) c = c.getApplicationContext();
+        setThemeColor(c, color, attr);
     }
 }

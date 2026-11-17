@@ -16,4 +16,19 @@
         <item name="android:statusBarColor">#191919</item>
         <item name="android:navigationBarColor">#191919</item>
     </style>
+
+    <style name="Theme.Forest" parent="Theme.LocalChat">
+        <item name="colorPrimary">@color/forest_primary</item>
+        <item name="colorSecondary">@color/forest_secondary</item>
+    </style>
+
+    <style name="Theme.Midnight" parent="Theme.LocalChat">
+        <item name="colorPrimary">@color/midnight_primary</item>
+        <item name="colorSecondary">@color/midnight_secondary</item>
+    </style>
+
+    <style name="Theme.Nordic" parent="Theme.LocalChat">
+        <item name="colorPrimary">@color/nordic_primary</item>
+        <item name="colorSecondary">@color/nordic_secondary</item>
+    </style>
 </resources>

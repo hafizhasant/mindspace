@@ -31,11 +31,11 @@ public class ChatsActivity extends AppCompatActivity {
 
     private final Adapter adapter = new Adapter(this);
 
-    static class Adapter extends BaseAdapter {
-        private final ChatsActivity activity;
+    class Adapter extends BaseAdapter {
+        private final List<ChatStore.Info> shown;
 
-        Adapter(ChatsActivity a) {
-            activity = a;
+        Adapter(List<ChatStore.Info> shown) {
+            this.shown = shown;
         }
 
         @Override
@@ -44,47 +44,40 @@ public class ChatsActivity extends AppCompatActivity {
         }
 
         @Override
-        public ChatStore.Info getItem(int p) {
-            return shown.get(p);
+        public long getItemId(int position) {
+            return position;
         }
 
         @Override
-        public long getItemId(int p) {
-            return p;
-        }
-
-        @Override
-        public View getView(int p, View v, AbsListView lv) {
+        public View getView(int position, View convertView, ViewGroup parent) {
             ViewHolder holder;
-            if (v == null) {
-                v = LayoutInflater.from(activity).inflate(R.layout.item_chat, lv, false);
+            if (convertView == null) {
+                convertView = LayoutInflater.from(ChatsActivity.this).inflate(R.layout.item_chat, parent, false);
                 holder = new ViewHolder();
-                holder.title = v.findViewById(R.id.chat_title);
-                holder.time = v.findViewById(R.id.chat_time);
-                v.setTag(holder);
+                holder.title = convertView.findViewById(R.id.chat_title);
+                holder.subtitle = convertView.findViewById(R.id.chat_subtitle);
+                holder.lastMessage = convertView.findViewById(R.id.chat_last_message);
+                holder.unreadCount = convertView.findViewById(R.id.chat_unread_count);
+                convertView.setTag(holder);
             } else {
-                holder = (ViewHolder) v.getTag();
+                holder = (ViewHolder) convertView.getTag();
             }
-            ChatStore.Info c = shown.get(p);
-            holder.title.setText(c.title);
-            String when = ago(c.updated);
-            holder.time.setText(c.id.equals(activity.currentId) ? when + "  ·  current" : when);
-            return v;
-        }
 
-        @Override
-        public View newView(AbsListView lv, int p, List<View> cache) {
-            View v = LayoutInflater.from(activity).inflate(R.layout.item_chat, lv, false);
-            ViewHolder holder = new ViewHolder();
-            holder.title = v.findViewById(R.id.chat_title);
-            holder.time = v.findViewById(R.id.chat_time);
-            v.setTag(holder);
-            return v;
+            ChatStore.Info c = shown.get(position);
+            holder.title.setText(c.title);
+            holder.subtitle.setText(c.subtitle);
+            holder.lastMessage.setText(c.lastMessage);
+            holder.unreadCount.setVisibility(c.unread > 0 ? View.VISIBLE : View.GONE);
+            holder.unreadCount.setText(String.valueOf(c.unread));
+
+            return convertView;
         }
 
         static class ViewHolder {
             TextView title;
-            TextView time;
+            TextView subtitle;
+            TextView lastMessage;
+            TextView unreadCount;
         }
     }
 
