@@ -6,6 +6,7 @@ import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.AbsListView;
 import android.widget.AdapterView;
 import android.widget.BaseAdapter;
@@ -44,6 +45,11 @@ public class ChatsActivity extends AppCompatActivity {
         }
 
         @Override
+        public Object getItem(int position) {
+            return shown.get(position);
+        }
+
+        @Override
         public long getItemId(int position) {
             return position;
         }
@@ -55,9 +61,7 @@ public class ChatsActivity extends AppCompatActivity {
                 convertView = LayoutInflater.from(ChatsActivity.this).inflate(R.layout.item_chat, parent, false);
                 holder = new ViewHolder();
                 holder.title = convertView.findViewById(R.id.chat_title);
-                holder.subtitle = convertView.findViewById(R.id.chat_subtitle);
-                holder.lastMessage = convertView.findViewById(R.id.chat_last_message);
-                holder.unreadCount = convertView.findViewById(R.id.chat_unread_count);
+                holder.time = convertView.findViewById(R.id.chat_time);
                 convertView.setTag(holder);
             } else {
                 holder = (ViewHolder) convertView.getTag();
@@ -65,19 +69,14 @@ public class ChatsActivity extends AppCompatActivity {
 
             ChatStore.Info c = shown.get(position);
             holder.title.setText(c.title);
-            holder.subtitle.setText(c.subtitle);
-            holder.lastMessage.setText(c.lastMessage);
-            holder.unreadCount.setVisibility(c.unread > 0 ? View.VISIBLE : View.GONE);
-            holder.unreadCount.setText(String.valueOf(c.unread));
+            holder.time.setText(ago(c.updated));
 
             return convertView;
         }
 
         static class ViewHolder {
             TextView title;
-            TextView subtitle;
-            TextView lastMessage;
-            TextView unreadCount;
+            TextView time;
         }
     }
 
