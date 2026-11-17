@@ -28,7 +28,7 @@ public class ChatsActivity extends AppCompatActivity {
     private final List<ChatStore.Info> shown = new ArrayList<>();
     private RecyclerView list;
 
-    private final RecyclerView.Adapter adapter = new RecyclerView.Adapter() {
+    private final RecyclerView.Adapter adapter = new RecyclerView.Adapter<ChatViewHolder>() {
         @Override
         public int getItemCount() {
             return shown.size();
@@ -45,20 +45,30 @@ public class ChatsActivity extends AppCompatActivity {
         }
 
         @Override
-        public View onCreateViewHolder(ViewGroup parent, int viewType) {
+        public ChatViewHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             View v = LayoutInflater.from(ChatsActivity.this).inflate(R.layout.item_chat, parent, false);
-            return v;
+            return new ChatViewHolder(v);
         }
 
         @Override
-        public void onBindViewHolder(View v, int p) {
+        public void onBindViewHolder(ChatViewHolder vh, int p) {
             ChatStore.Info c = shown.get(p);
-            ((TextView) v.findViewById(R.id.chat_title)).setText(c.title);
+            ((TextView) vh.title).setText(c.title);
             String when = ago(c.updated);
-            ((TextView) v.findViewById(R.id.chat_time))
-                    .setText(c.id.equals(currentId) ? when + "  ·  current" : when);
+            ((TextView) vh.time).setText(c.id.equals(currentId) ? when + "  ·  current" : when);
         }
     };
+
+    static class ChatViewHolder extends RecyclerView.ViewHolder {
+        final TextView title;
+        final TextView time;
+
+        ChatViewHolder(View v) {
+            super(v);
+            title = v.findViewById(R.id.chat_title);
+            time = v.findViewById(R.id.chat_time);
+        }
+    }
 
     @Override
     protected void onCreate(Bundle state) {
@@ -72,11 +82,21 @@ public class ChatsActivity extends AppCompatActivity {
         list = findViewById(R.id.chat_list);
         list.setLayoutManager(new LinearLayoutManager(this));
         list.setAdapter(adapter);
-        list.setOnItemClickListener((p, v, pos, id) -> finishWith(shown.get(pos).id));
-        list.setOnItemLongClickListener((p, v, pos, id) -> {
-            options(shown.get(pos));
-            return true;
-        });
+        list.registerAdapterCallbackForwardingToListeners(
+                new RecyclerView.OnItemTouchListener() {
+                    @Override
+                    public void onScrollStateChanged(RecyclerView r, int s) {}
+
+                    @Override
+                    public boolean onTouch(RecyclerView r, MotionEvent m, boolean consumed) {
+                        return false;
+                    }
+
+                    @Override
+                    public void onRequestDisallowInterceptTouchEvent(boolean d) {}
+                },
+                (p, v, pos, id) -> finishWith(shown.get(pos).id),
+                (p, v, pos, id) -> options(shown.get(pos)));
 
         findViewById(R.id.btn_close).setOnClickListener(v -> finish());
         findViewById(R.id.btn_new_chat).setOnClickListener(v -> {
