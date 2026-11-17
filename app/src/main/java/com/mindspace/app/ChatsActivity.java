@@ -7,9 +7,7 @@ import android.text.TextWatcher;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.BaseAdapter;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.TextView;
 import androidx.appcompat.app.AppCompatActivity;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
@@ -18,6 +16,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Locale;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 public class ChatsActivity extends AppCompatActivity {
     private ChatStore store;
@@ -26,15 +26,16 @@ public class ChatsActivity extends AppCompatActivity {
     private TextView empty;
     private final List<ChatStore.Info> all = new ArrayList<>();
     private final List<ChatStore.Info> shown = new ArrayList<>();
+    private RecyclerView list;
 
-    private final BaseAdapter adapter = new BaseAdapter() {
+    private final RecyclerView.Adapter adapter = new RecyclerView.Adapter() {
         @Override
-        public int getCount() {
+        public int getItemCount() {
             return shown.size();
         }
 
         @Override
-        public Object getItem(int p) {
+        public ChatStore.Info getItem(int p) {
             return shown.get(p);
         }
 
@@ -44,15 +45,18 @@ public class ChatsActivity extends AppCompatActivity {
         }
 
         @Override
-        public View getView(int p, View convert, ViewGroup parent) {
-            View v = convert != null ? convert
-                    : LayoutInflater.from(ChatsActivity.this).inflate(R.layout.item_chat, parent, false);
+        public View onCreateViewHolder(ViewGroup parent, int viewType) {
+            View v = LayoutInflater.from(ChatsActivity.this).inflate(R.layout.item_chat, parent, false);
+            return v;
+        }
+
+        @Override
+        public void onBindViewHolder(View v, int p) {
             ChatStore.Info c = shown.get(p);
             ((TextView) v.findViewById(R.id.chat_title)).setText(c.title);
             String when = ago(c.updated);
             ((TextView) v.findViewById(R.id.chat_time))
                     .setText(c.id.equals(currentId) ? when + "  ·  current" : when);
-            return v;
         }
     };
 
@@ -65,16 +69,22 @@ public class ChatsActivity extends AppCompatActivity {
         search = findViewById(R.id.search);
         empty = findViewById(R.id.empty);
 
-        ListView listView = findViewById(R.id.chat_list);
-        listView.setAdapter(adapter);
-        listView.setOnItemClickListener((p, v, pos, id) -> finishWith(shown.get(pos).id));
-        listView.setOnItemLongClickListener((p, v, pos, id) -> {
+        list = findViewById(R.id.chat_list);
+        list.setLayoutManager(new LinearLayoutManager(this));
+        list.setAdapter(adapter);
+        list.setOnItemClickListener((p, v, pos, id) -> finishWith(shown.get(pos).id));
+        list.setOnItemLongClickListener((p, v, pos, id) -> {
             options(shown.get(pos));
             return true;
         });
 
         findViewById(R.id.btn_close).setOnClickListener(v -> finish());
-        findViewById(R.id.btn_new_chat).setOnClickListener(v -> finishWith(store.newId()));
+        findViewById(R.id.btn_new_chat).setOnClickListener(v -> {
+            String id = store.newId();
+            reload();
+            empty.setVisibility(View.GONE);
+            finishWith(id);
+        });
 
         search.addTextChangedListener(new TextWatcher() {
             @Override

@@ -124,7 +124,9 @@ public class MainActivity extends AppCompatActivity {
 
     private void refresh() {
         adapter.notifyDataSetChanged();
-        if (!messages.isEmpty()) list.scrollToPosition(messages.size() - 1);
+        runOnUiThread(() -> {
+            if (!messages.isEmpty()) list.scrollToPosition(messages.size() - 1);
+        });
     }
 
     private void setSendMode() {
