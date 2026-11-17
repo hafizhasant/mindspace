@@ -435,7 +435,6 @@ public class MainActivity extends AppCompatActivity {
 
     private void setThemeColor(int color, int attr) {
         Context c = this;
-        while (c.getApplicationContext() != c) c = c.getApplicationContext();
         setThemeColor(c, color, attr);
     }
 }

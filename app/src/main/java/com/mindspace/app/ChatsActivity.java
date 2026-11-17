@@ -30,7 +30,7 @@ public class ChatsActivity extends AppCompatActivity {
     private final List<ChatStore.Info> shown = new ArrayList<>();
     private ListView list;
 
-    private final Adapter adapter = new Adapter(this);
+    private final Adapter adapter = new Adapter(shown);
 
     class Adapter extends BaseAdapter {
         private final List<ChatStore.Info> shown;
